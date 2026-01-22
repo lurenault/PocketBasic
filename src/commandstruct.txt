@@ -1,0 +1,9 @@
+ Struttura array comandi
+
+$00-$01 Puntatore elemento tabella successivo ( Se nullo è l'ultimo elemento dell'array )
+$02-$03 Token comando
+$04-$05 Indirizzo routine
+$06	Lunghezza stringa comando intero
+$07	Lunghezza stringa comando abbreviato
+$08-$xx Stringa comando intero
+$xx-$yy Comando abbreviato
