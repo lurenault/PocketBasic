@@ -4,8 +4,49 @@
 FINDFREESPOT:
 	;; Input: A=Dimensioni
 	;; OUTPUT: C= se settato, non c'è uno spazio sufficientemente grande
+	;; OUTPUT SE TROVATO:
+	;; 	CURRVAR = inizio locazione libera
+	;; 	MMTEMPP1 = Locazione di memoria successiva
+	;;      MMTEMPP2 = Locazione di memoria precedente
 
 	sta	MMTEMPP1+1
+	;; Prima di iniziare a cercare, verifichiamo se ci sono variabili in memoria
+	lda	FIRSTENTRY
+	ora	FIRSTENTRY+1
+	bne	@notempty
+
+	;; NON CI SONO ALTRE VARIABILI
+	;; (CURRVAR) = MEMTOP - SIZEOF(CURRVAR)
+	;; (MMTEMPP1) = (MMTEMPP2) = 0
+
+	lda	MEMTOP
+	sec
+	sbc	MMTEMPP1+1
+	sta	CURRVAR
+	lda	MEMTOP+1
+	sbc	#0
+	sta	CURRVAR+1
+
+	.if	.cap(CPU_HAS_STZ)
+
+	stz	MMTEMPP1
+	stz	MMTEMPP1+1
+	stz	MMTEMPP2
+	stz	MMTEMPP2+1
+
+	.else
+
+	lda	#0
+	sta	MMTEMPP1
+	sta	MMTEMPP1+1
+	sta	MMTEMPP2
+	sta	MMTEMPP2+1
+
+	.endif
+
+	clc
+	rts
+@notempty:
 	;; Per prima cosa verifichiamo se c'è uno spazio tra due variabili sufficientemente grande
 	lda	FIRSTENTRY
 	sta	CURRVAR
@@ -126,7 +167,7 @@ FINDFREESPOT:
 	rts
 @foundbottom:
 	;; CURRVAR = FIRSTENTRY - SIZEOF(VARIABILE DA AGGIUNGERE)
-	;; MMTEMPP1 = FIRSTENTRY
+	;; MMTEMPP1 = FIRSTENTRY	
 	lda	FIRSTENTRY
 	sta	MMTEMPP1
 	sec
@@ -151,6 +192,6 @@ FINDFREESPOT:
 	sta	MMTEMPP2+1
 
 	.endif
-
+@exit:
 	clc
 	rts

@@ -60,7 +60,6 @@ MEMINIT:
 	pla
 	
 	.endif
-SETBOTTOM:
 	;; Imposta l'inizio della memoria
 	;; Salva l'indirizzo di inizio memoria utile
 	stx	MEMBOTTOM
@@ -68,16 +67,63 @@ SETBOTTOM:
 
 	rts
 
-.include	"alloc.s"
+MOVEBOTTOM:
+	;; Sposta l'inizio della memoria allocata (se possibile)
+	;; INPUT: x,y = Indirizzo al quale spostare l'inizio della memoria
+	;; OUTPUT: Carry = se settato, non c'è spazio disponibile per spostare la memoria
+	pha
 
-DEFRAG:
-	; Deframmenta la memoria
+	lda	MEMBOTTOM	;Salva l'inizio della memoria attuale nello stack
+	pha
+	lda	MEMBOTTOM+1
+	pha
+
+	stx	MEMBOTTOM	;Prova ad impostare l'inizio della memoria
+	sty	MEMBOTTOM+1
+
+	lda	FIRSTENTRY+1	;Se la prima variabile in memoria ha un indirizzo 
+	cmp	MEMBOTTOM+1	;inferiore al nuovo inizio della memoria, proviamo a vedere
+	bcs	@done		;se deframmentando ci stia
+
+	lda	FIRSTENTRY
+	cmp	MEMBOTTOM
+	bcs	@done
+
+	;; Forse non c'è spazio disponibile, proviamo a deframmentare la memoria
+	ldx	#$FF		;Forza deframmentazione totale, con aggiornamento link alla
+	ldy	#$FF		;prima entrata di memoria
+	jsr	DEFRAG
+
+	lda	FIRSTENTRY+1	;Ripete lo stesso controllo fatto prima, ma se questa volta
+	cmp	MEMBOTTOM+1	;fallisce...
+	bcs	@done
+
+	lda	FIRSTENTRY
+	cmp	MEMBOTTOM
+	bcs	@done
+
+	;; NON C'E' MEMORIA SUFFICIENTE
+	;; Ripristina il vecchio inizio di memoria
+	pla
+	sta	MEMBOTTOM+1
+	pla
+	sta	MEMBOTTOM
+
+	;; Riprende A dallo stack ed esce col carry settato
+	pla
+	sec
 	rts
-
-FINDFREE:
-	; Trova uno slot di memoria dove poter inserire la variabile
+@done:
+	;; Scarta il vecchio inizio di memoria
+	pla
+	pla
+	;; Riprende A dallo stack ed esce col carry nullo
+	pla
+	clc
 	rts
 	
+.include	"alloc.s"
+.include	"defrag.s"
 .include	"freemem.s"
 .include	"remove.s"
 .include	"findspot.s"	

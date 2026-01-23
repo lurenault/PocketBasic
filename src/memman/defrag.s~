@@ -1,0 +1,258 @@
+	;; Deframmenta la memoria
+
+DEFRAG:
+	;; INPUT: x,y = Spazio minimo necessario
+	;; OUTPUT: CURRVAR = Puntatore alla prima zona di memoria utile trovata
+	;;         MMTEMPP1 = Puntatore alla variabile successiva
+	;;         MMTEMPP2 = Puntatore alla variabile precedente
+
+	;; MMTEMPP1 = Memoria necessaria
+	stx	MMTEMPP2
+	sty	MMTEMPP2+1
+
+	;; Ora dobbiamo trovare l'ultima variabile disponibile
+
+	;; Si parte dalla prima variabile in memoria
+	lda	FIRSTENTRY
+	sta	CURRVAR
+	lda	FIRSTENTRY+1
+	sta	CURRVAR+1
+
+	ldx	#0		; Velocizza un po' l'operazione
+@findlast:
+	ldy	#1		; E' l'ultima solo se il puntatore alla variabile successiva è nullo
+	lda	(CURRVAR),y
+	ora	(CURRVAR,x)
+	beq	@foundlast
+
+	;; Non è l'ultima, quindi (CURRVAR) = Puntatore locazione successiva
+	lda	(CURRVAR),y
+	tay
+	lda	(CURRVAR,x)
+	sta	CURRVAR
+	sty	CURRVAR+1
+
+	.if	.cap(CPU_HAS_BRA8)
+
+	bra	@findlast
+
+	.else
+
+	jmp	@findlast
+
+	.endif
+@foundlast:
+	;; Ora che ci troviamo all'ultima variabile, impostiamo il ciclo di deframmentazione
+
+	;; MMTEMPP1 = Indirizzo variabile successiva
+	;; Visto che siamo all'ultima, lo impostiamo al valore di MEMTOP per semplificare
+	lda	MEMTOP
+	sta	MMTEMPP1
+	lda	MEMTOP+1
+	sta	MMTEMPP1+1
+
+
+	;; Calcoliamo lo spazio tra una variabile e l'altra
+	pha			; Lo salviamo nello stack, potrebbe servire per deframmentare
+
+	;; X,Y = Indirizzo di fine variabile + 1
+	clc
+	adc	CURRVAR
+	tax
+	lda	#0
+	adc	CURRVAR+1
+	tay
+@defloop
+	;; Se X,Y == Puntatore locazione successiva, la zona di memoria non è frammentata 
+	cpx	MMTEMPP1
+	bne	@nextloc
+
+	cpy	MMTEMPP1+1
+	bne	@nextloc
+
+	;; LOCAZIONE FRAMMENTATA
+	;; Verifichiamo se ha una grandezza sufficiente
+	;; X,Y = Grandezza spazio = (MMTEMPP1)-(XY)
+
+
+	lda	MMTEMPP1
+	pha			; Salva il valore di MMTEMPP1 per dopo
+	stx	MMTEMPP1
+	sec
+	sbc	MMTEMPP1
+	tax
+
+	lda	MMTEMPP1+1
+	pha
+	sty	MMTEMPP1+1
+	sbc	MMTEMPP1+1
+	tay
+	;; Dopo ciò MMTEMPP1 = Indirizzo fine variabile + 1
+	
+	cpy	MMTEMPP2+1	; Se l'high byte della grandezza dello spazio è minore
+	bcc	@defrag		; dell'high byte della grandezza richiesta, non abbiamo trovato nulla
+	bne	@found		; Se sono uguali dobbiamo verificare il low byte
+
+	cpx	MMTEMPP2
+	bcc	@defrag		; Se anche il low byte è minore, non abbiamo trovato nulla e dobbiamo deframmentare
+@found:
+	;; MMTEMPP2 = Indirizzo variabile corrente ( che diventerà la precedente )
+	;; MMTEMPP1 = ripristina Indirizzo variabile successiva
+	;; CURRVAR = Indirizzo locazione trovata ( valore corrente di MMTEMPP1 )
+
+	ldx	MMTEMPP1
+	ldy	MMTEMPP1+1
+
+	lda	CURRVAR
+	sta	MMTEMPP2
+	lda	CURRVAR+1
+	sta	MMTEMPP2+1
+
+	stx	CURRVAR
+	sty	CURRVAR+1
+	
+	;; Ripristina MMTEMPP1 con il puntatore alla variabile successiva
+	pla
+	sta	MMTEMPP1+1
+	pla
+	sta	MMTEMPP1
+
+	;; Abbiamo terminato!
+	rts
+@defrag:
+	;; Calcoliamo l'indirizzo dove andare a copiare la variabile corrente
+	;; MMTEMPP1 = Indirizzo di copia = (MMTEMPP1)-SIZEOF(CURRVAR)
+
+	lda	MMTEMPP1
+	tax
+	jsr	SIZEOF
+	sta	MMTEMPP1
+	tay
+	txa
+
+	sec
+	sbc	MMTEMPP1
+	sta	MMTEMPP1
+	lda	MMTEMPP1+1
+	sbc	#0
+	sta	MMTEMPP1+1
+
+	;; Situazione corrente:
+	;; Y = SIZEOF(CURRVAR)
+	;; (MMTEMPP1) = Indirizzo di copia
+
+	;; Loop di copia della variabile
+@copyloop:
+	dey
+	bmi	@copydone
+
+	lda	(CURRVAR),y	;Copia dall'indirizzo vecchio all'indirizzo nuovo
+	sta	(MMTEMPP1),y
+
+	.if	.cap(CPU_HAS_BRA8)
+
+	bra	@copyloop
+
+	.else
+
+	jmp	@copyloop
+
+	.endif
+@copydone:
+	;; Ora dobbiamo linkare correttamente la variabile spostata
+	lda	MMTEMPP1	; Aggiorna l'indirizzo della variabile appena deframmentata
+	sta	CURRVAR
+	lda	MMTEMPP1+1
+	sta	CURRVAR+1
+	
+	ldy	#1
+	ldx	#0
+	lda	(CURRVAR),y	; Se è l'ultima, non dobbiamo linkare nulla
+	ora	(CURRVAR,x)
+	beq	@linkprev
+
+	;; NON E' L'ULTIMA
+	;; Preleva l'indirizzo della variabile successiva
+	lda	(CURRVAR),y
+	sta	MMTEMPP1+1
+	lda	(CURRVAR,x)
+	sta	MMTEMPP1
+
+	;; Linka la variabile corrente a quella successiva
+	ldy	#2
+	lda	CURRVAR
+	sta	(MMTEMPP1),y
+	iny
+	lda	CURRVAR+1
+	sta	(MMTEMPP1),y
+@linkprev:
+	ldy	#2		; Se è la prima, dobbiamo linkare alla prima variabile
+	lda	(CURRVAR),y
+	iny
+	ora	(CURRVAR),y
+	beq	@next
+
+	;; NON E' LA PRIMA
+	;; Preleva l'indirizzo della variabile precedente
+	ldy	#2
+	lda	(CURRVAR),y
+	sta	MMTEMPP1
+	iny
+	lda	(CURRVAR),y
+	sta	MMTEMPP1+1
+
+	;; Aggiorna il link
+	ldy	#0
+	lda	CURRVAR
+	sta	(MMTEMPP1),y
+	iny
+	lda	CURRVAR+1
+	sta	(MMTEMPP1),y
+@next:
+	;; CURRVAR = Variabile precedente
+	lda	CURRVAR
+	sta	MMTEMPP1
+	lda	CURRVAR+1
+	sta	MMTEMPP1+1
+
+	ldy	#2		; Se era la prima variabile, significa che lo spazio è disponibile tra lei e la prima variabile
+	lda	(MMTEMPP1),y
+	iny
+	ora	(MMTEMPP1),y
+	beq	@findinbottom
+
+	dey
+	lda	(MMTEMPP1),y
+	sta	CURRVAR
+	iny
+	lda	(MMTEMPP1),y
+	sta	CURRVAR+1
+
+	;; A questo punto ripetiamo il ciclo!
+	jmp 	@defloop
+@findinbottom:
+	;; (CURRVAR)=(MMTEMPP1)-(Spazio richiesto, ovvero MMTEMPP2)
+	;; (MMTEMPP2) = 0
+
+	lda	MMTEMPP1
+	sec
+	sbc	MMTEMPP2
+	sta	CURRVAR
+	lda	MMTEMPP1+1
+	sbc	MMTEMPP2+1
+	sta	CURRVAR+1
+
+	.if	.cap(CPU_HAS_STZ)
+
+	stz	MMTEMPP2
+	stz	MMTEMPP2+1
+
+	.else
+
+	lda	#0
+	sta	MMTEMPP2
+	sta	MMTEMPP2+1
+
+	.endif
+
+	rts

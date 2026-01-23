@@ -60,7 +60,8 @@ MALLOC:
 	bcc	@setvar
 
 	;; Se non è stato trovato alcuno spazio, deframmenta la memoria quanto basta per avere A bytes di spazio
-	lda	MMTEMPP1	; A = spazio occupato dalla variabile
+	ldx	MMTEMPP1	; A = spazio occupato dalla variabile
+	ldy	#0
 	jsr	DEFRAG
 @setvar:
 	;; A questo punto abbiamo i seguenti valori in memoria:
