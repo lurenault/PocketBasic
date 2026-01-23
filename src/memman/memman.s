@@ -12,18 +12,32 @@
 ; $07-$xx	Nome variabile
 ; $xx-$yy	Contenuto della variabile
 
+
+	;; Procedura di inizializzazione (COLD START)
+	;; 1) chiamare SETTOP
+	;; 2) chiamare MEMINIT
+	;;
+	;; WARM START ( ad esempio quando l'utente digita RUN dal prompt basic )
+	;; - chiamare MEMINIT
+	
 .ifndef	MEMMANZP_H
 .error	"Must include memman_zp.s in zeropage section!"
 .else
 
 .out	"Memory Manager v0.1 by lurenault"
 
-MEMINIT:			; Inizializza il controllore della memoria
-	;; INPUT: x,y= Indirizzo di inizio memoria utile
+SETTOP:
+	;; Imposta il limite superiore della memoria utilizzabile
+	;; Input: x,y= Ultimo indirizzo utilizzabile+1 (low-high order)
 
-	;; Salva l'indirizzo di inizio memoria utile
-	stx	MEMBOTTOM
-	sty	MEMBOTTOM+1
+	stx	MEMTOP
+	sty	MEMTOP+1
+	rts
+
+	
+MEMINIT:
+	;; Inizializza il controllore della memoria
+	;; INPUT: x,y= Indirizzo di inizio memoria utile
 
 	;; Azzera il puntatore alla prima variabile in memoria e alla variabile corrente
 	.if	.cap(CPU_HAS_STZ)
@@ -46,12 +60,15 @@ MEMINIT:			; Inizializza il controllore della memoria
 	pla
 	
 	.endif
-	
+SETBOTTOM:
+	;; Imposta l'inizio della memoria
+	;; Salva l'indirizzo di inizio memoria utile
+	stx	MEMBOTTOM
+	sty	MEMBOTTOM+1
+
 	rts
 
-MALLOC:
-	; Alloca una determinata porzione di memoria
-	rts
+.include	"alloc.s"
 
 DEFRAG:
 	; Deframmenta la memoria
@@ -60,7 +77,9 @@ DEFRAG:
 FINDFREE:
 	; Trova uno slot di memoria dove poter inserire la variabile
 	rts
+	
 .include	"freemem.s"
 .include	"remove.s"
+.include	"findspot.s"	
 
 .endif

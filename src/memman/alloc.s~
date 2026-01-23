@@ -1,0 +1,12 @@
+	;; Allocazione della memoria
+
+MALLOC:
+	;; Alloca una variabile in memoria
+	;; DATI DELLA VARIABILE:
+	;; 	MMNAMEPTR	:	Puntatore alla stringa del nome della variabile da aggiungere
+	;; 	MMNAMELEN	:	Lunghezza della stringa del nome della variabile da aggiungere
+	;; 	MMVARTYPE	:	Tipo di variabile
+	;; 	MMBUFFPTR	:	Puntatore al buffer contenente il valore della variabile
+	;; 	MMBUFFLEN	:	Lunghezza del buffer
+
+	

@@ -1,0 +1,76 @@
+	;; Trova uno spazio libero in memoria
+
+
+FINDFRESPOT:
+	;; Input: A=Dimensioni
+	;; OUTPUT: C= se settato, non c'è uno spazio sufficientemente grande
+
+	sta	MMTEMPP1+1
+	;; Per prima cosa verifichiamo se c'è uno spazio tra due variabili sufficientemente grande
+	lda	FIRSTENTRY
+	sta	CURRVAR
+	lda	FIRSTENTRY+1
+	sta	CURRVAR+1
+@findintrspa:
+	lda	CURRVAR
+	ora	CURRVAR+1
+	beq	@checktop
+	
+	lda	CURRVAR
+	sta	MMTEMPP2
+	lda	CURRVAR+1
+	sta	MMTEMPP2+1
+	jsr	SIZEOF
+	clc
+	adc	CURRVAR
+	sta	CURRVAR
+	pha
+	lda	#0
+	tay
+	adc	CURRVAR+1
+	sta	CURRVAR+1
+
+	lda	(MMTEMPP2),y	; La memoria tra gli spazi è uguale a INDIRIZZO INIZIO VARIABILE SUCCESSIVA -
+	sec			; - INDIRIZZO FINE VARIABILE CORRENTE+1
+	sbc	CURRVAR
+	sta	CURRVAR
+	iny
+	lda	(MMTEMPP2),y
+	sbc	CURRVAR+1
+	;; Ora verifichiamo se questa memoria è sufficiente
+	bne	@foundint	; Se l'high byte della memoria tra gli spazi non è nullo, l'abbiamo sicuramente trovato
+
+	lda	CURRVAR		; Verifica se c'è spazio a sufficienza
+	cmp	MMTEMPP1+1
+	bcc	@nextint
+
+	;; C'è spazio disponibile
+	pla
+	sta	CURRVAR
+
+	ldy	#0
+	lda	(MMTEMPP2),y
+	sta	MMTEMPP1
+	iny
+	lda	(MMTEMPP2),y
+	sta	MMTEMPP1+1
+
+	clc
+	rts
+@nextint:
+	ldy	#0
+	lda	(MMTEMPP2),y
+	sta	CURRVAR
+	iny
+	lda	(MMTEMPP2),y
+	sta	CURRVAR+1
+
+	.if	.cap(CPU_HAS_BRA8)
+
+	bra	@findintrspa
+
+	.else
+
+	jmp	@findintrspa
+
+	.endif

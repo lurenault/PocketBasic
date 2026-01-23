@@ -23,5 +23,9 @@ MMNAMELEN:
 	.res 1	; Lunghezza del nome della variabile da aggiungere/cercare/modificare
 MMVARTYPE:
 	.res 1	; Tipo della variabile da aggiungere/cercare/modificare
+MMBUFFLEN:
+	.res 1			; Lunghezza buffer dei dati della variabile
+MMBUFFPTR:
+	.res 2			; Puntatore al buffer dei dati della variabile
 
-; TOTALE:    16 byte
+; TOTALE:    19 byte
