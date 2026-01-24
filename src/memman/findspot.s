@@ -177,7 +177,7 @@ FINDFREESPOT:
 	lda	FIRSTENTRY+1
 	sta	MMTEMPP1+1
 	sbc	#0
-	sta	CURRVAR
+	sta	CURRVAR+1
 
 	;; MMTEMPP2 = 0
 	.if	.cap(CPU_HAS_STZ)

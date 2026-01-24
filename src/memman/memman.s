@@ -20,11 +20,11 @@
 	;; WARM START ( ad esempio quando l'utente digita RUN dal prompt basic )
 	;; - chiamare MEMINIT
 	
-.ifndef	MEMMANZP_H
-.error	"Must include memman_zp.s in zeropage section!"
-.else
+	.ifndef	MEMMANZP_H
+	.error	"Must include memman_zp.s in zeropage section!"
+	.else
 
-.out	"Memory Manager v0.1 by lurenault"
+	.out	"Memory Manager v0.1 by lurenault"
 
 SETTOP:
 	;; Imposta il limite superiore della memoria utilizzabile
@@ -122,10 +122,11 @@ MOVEBOTTOM:
 	clc
 	rts
 	
-.include	"alloc.s"
-.include	"defrag.s"
-.include	"freemem.s"
-.include	"remove.s"
-.include	"findspot.s"	
+	.include	"alloc.s"
+	.include	"defrag.s"
+	.include	"freemem.s"
+	.include	"remove.s"
+	.include	"findspot.s"
+	.include	"user.s"
 
-.endif
+	.endif

@@ -5,6 +5,7 @@
 	MMSTRSIZE	:=	$02 ; La stringa del nome occupa più di 16 byte
 	MMNOSPACE	:=	$03 ; La memoria disponibile non è sufficiente
 	MMINVINIT	:=	$04 ; La memoria non è inizializzata correttamente: MEMTOP è minore di MEMBOTTOM
+	MMNAMEXIS	:=	$05 ; Esiste già una variabile con questo nome
 
 MALLOC:
 	;; Alloca una variabile in memoria
@@ -23,12 +24,22 @@ MALLOC:
 	beq	@nameerr	; Se il nome ha lunghezza nulla, dà errore
 
 	cmp	#16
-	bcs	@checksize	; Se il nome è più piccolo o uguale di 16 caratteri siamo a posto.
+	bcc	@checkexists	; Se il nome è più piccolo o uguale di 16 caratteri siamo a posto.
 
 @nameerr:
 	;; ERRORE: nome troppo lungo
 	sec
 	lda	#MMSTRSIZE
+	rts
+@checkexists:
+	;; Ora controlliamo se esiste già una variabile con questo nome
+	sec			; Chiamata a FINDVAR con carry settato: non guarda al tipo
+	jsr	FINDVAR
+	bcs	@checksize
+
+	;; FINDVAR HA TROVATO UNA VARIABILE CON LO STESSO NOME
+	sec
+	lda	#MMNAMEXIS
 	rts
 @checksize:
 	;; Ora controlliamo la lunghezza complessiva della variabile

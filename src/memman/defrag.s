@@ -51,18 +51,18 @@ DEFRAG:
 	lda	MEMTOP+1
 	sta	MMTEMPP1+1
 
-
-	;; Calcoliamo lo spazio tra una variabile e l'altra
-	pha			; Lo salviamo nello stack, potrebbe servire per deframmentare
+@defloop:
+	;; Verifichiamo se la zona è frammentata
 
 	;; X,Y = Indirizzo di fine variabile + 1
+	jsr	SIZEOF
 	clc
 	adc	CURRVAR
 	tax
 	lda	#0
 	adc	CURRVAR+1
 	tay
-@defloop:
+
 	;; Se X,Y == Puntatore locazione successiva, la zona di memoria non è frammentata 
 	cpx	MMTEMPP1
 	beq	@nextcheckptr
@@ -70,7 +70,7 @@ DEFRAG:
 	jmp	@next
 @nextcheckptr:
 	cpy	MMTEMPP1+1
-	bne	@nextloc
+	beq	@nextloc
 	
 	;; LOCAZIONE FRAMMENTATA
 	;; Verifichiamo se ha una grandezza sufficiente
@@ -78,14 +78,14 @@ DEFRAG:
 
 
 	lda	MMTEMPP1
-	pha			; Salva il valore di MMTEMPP1 per dopo
+	pha			; Salva il low byte della locazione successiva nello stack
 	stx	MMTEMPP1
 	sec
 	sbc	MMTEMPP1
 	tax
 
 	lda	MMTEMPP1+1
-	pha
+	pha			; Salva l'high byte della locazione successiva nello stack
 	sty	MMTEMPP1+1
 	sbc	MMTEMPP1+1
 	tay
@@ -99,10 +99,10 @@ DEFRAG:
 	bcc	@defrag		; Se anche il low byte è minore, non abbiamo trovato nulla e dobbiamo deframmentare
 @found:
 	;; MMTEMPP2 = Indirizzo variabile corrente ( che diventerà la precedente )
-	;; MMTEMPP1 = ripristina Indirizzo variabile successiva
+	;; MMTEMPP1 = Indirizzo variabile successiva
 	;; CURRVAR = Indirizzo locazione trovata ( valore corrente di MMTEMPP1 )
 
-	ldx	MMTEMPP1
+	ldx	MMTEMPP1	; XY = Lacazione di memoria trovata
 	ldy	MMTEMPP1+1
 
 	lda	CURRVAR
@@ -113,29 +113,31 @@ DEFRAG:
 	stx	CURRVAR
 	sty	CURRVAR+1
 	
-	;; Ripristina MMTEMPP1 con il puntatore alla variabile successiva
-	pla
-	sta	MMTEMPP1+1
-	pla
+	;; Impostiamo il puntatore alla variabile successiva
+	ldy	#0
+	lda	(MMTEMPP2),y
 	sta	MMTEMPP1
+	iny
+	lda	(MMTEMPP2),y
+	sta	MMTEMPP1+1
 
+	pla			; Ripristina lo stack
+	pla
 	;; Abbiamo terminato!
 	rts
 @defrag:
+	;; E' necessario deframmentare la memoria
 	;; Calcoliamo l'indirizzo dove andare a copiare la variabile corrente
-	;; MMTEMPP1 = Indirizzo di copia = (MMTEMPP1)-SIZEOF(CURRVAR)
+	;; MMTEMPP1 = Indirizzo di copia = (Locazione successiva (STACK))-SIZEOF(CURRVAR)
 
-	lda	MMTEMPP1
-	tax
 	jsr	SIZEOF
-	sta	MMTEMPP1
 	tay
-	txa
-
+	sta	MMTEMPP1
+	pla
 	sec
 	sbc	MMTEMPP1
 	sta	MMTEMPP1
-	lda	MMTEMPP1+1
+	pla
 	sbc	#0
 	sta	MMTEMPP1+1
 

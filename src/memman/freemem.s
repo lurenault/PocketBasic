@@ -8,6 +8,7 @@ MMFREE:
 	ldy	MEMTOP+1	; Se MEMTOP < MEMBOTTOM esce con il carry settato
 	cpy	MEMBOTTOM+1
 	bcc	@exiterr
+	bne	@do
 
 	ldx	MEMTOP
 	cpx	MEMBOTTOM
@@ -17,6 +18,9 @@ MMFREE:
 	rts
 @do:
 	pha			; Salva il contenuto del registro A
+
+	lda	MMTEMPP1
+	pha
 	
 	txa			; X contiene MEMTOP
 	;; Il carry è già settato dal confronto tra MEMTOP e MEMBOTTOM
@@ -66,6 +70,8 @@ MMFREE:
 @exit:
 	ldx	MMTEMPP1	; In output abbiamo la memoria disponibile
 	ldy	MMTEMPP1+1
+	pla
+	sta	MMTEMPP1
 	pla
 	clc
 	rts
