@@ -7,6 +7,88 @@
 	MMINVINIT	:=	$04 ; La memoria non è inizializzata correttamente: MEMTOP è minore di MEMBOTTOM
 	MMNAMEXIS	:=	$05 ; Esiste già una variabile con questo nome
 
+
+.macro	allocate	nameptr, namelen, vartype, buffptr, bufflen
+	.if	(.paramcount <> 5)
+	.error	"Invalid call to macro allocate"
+	.else
+		lda	namelen
+		ldx	#<nameptr
+		ldy	#>nameptr
+
+		jsr	SETVARNAM
+
+		lda	vartype
+		jsr SETVARTYP
+
+		lda	bufflen
+		ldx	#<buffptr
+		ldy	#>buffptr
+		jsr	SETVARBUFF
+
+		jsr	MALLOC
+	.endif
+.endmacro
+
+; Codici di errore
+
+GETERRTXT:
+	;Restituisce i dati del codice di errore
+	;Input:		A=Codice di errore
+	;OUTPUT:	A=Lunghezza stringa
+	;			X,Y = Puntatore stringa di errore
+
+	cmp	ERRORTAB
+	bcs @exit
+
+	asl
+	tax
+
+	lda	ERRORTAB+1,x
+	sta	MMTEMPP1
+	lda	ERRORTAB+2,x
+	sta	MMTEMPP1+1
+
+	ldy #0
+	lda	(MMTEMPP1),y
+
+	ldx	MMTEMPP1
+	ldy	MMTEMPP1+1
+	inx
+	bne	@exit
+	iny
+@exit:
+	rts
+
+ERRORTAB:
+	.byte	$06
+	.word	@error0
+	.word	@error1
+	.word	@error2
+	.word	@error3
+	.word	@error4
+	.word	@error5
+@error0:
+	.byte @error1-@error0-1
+	.byte "ok"
+@error1:
+	.byte @error2-@error1-1
+	.byte "la variabile e' troppo grande."
+@error2:
+	.byte @error3-@error2-1
+	.byte "il nome della variabile e' troppo lungo."
+@error3:
+	.byte @error4-@error3-1
+	.byte "memoria insufficiente"
+@error4:
+	.byte @error5-@error4-1
+	.byte "memoria non inizializzata correttamente."
+@error5:
+	.byte @end-@error5-1
+	.byte "nome della variabile gia' esistente"
+@end:
+
+
 MALLOC:
 	;; Alloca una variabile in memoria
 	;; OUTPUT:	A=codice di errore ($00 se ok)
@@ -57,29 +139,48 @@ MALLOC:
 	rts
 @checkfreespace:
 	;; Ora calcoliamo lo spazio disponibile e verifichiamo che la variabile ci stia dentro
-	sta	MMTEMPP1	; Salva lo spazio occupato dalla variabile
-	jsr 	MMFREE		; Calcola la memoria disponibile
-	bcc	@findspot	; Se il carry è nullo siamo a posto
+	ldx	MMFREE+1
+	bne	@findspot
 
-	;; ERRORE: MEMTOP < MEMBOTTOM
-	lda	#MMINVINIT
+	cmp	MMFREE
+	bcc	@findspot
+
+	; NON C'E' SPAZIO LIBERO A SUFFICIENZA!
+
+	sec
+	lda	#MMNOSPACE
 	rts
 @findspot:
 	;; Ora dobbiamo cercare uno spazio in memoria dove poter mettere la variabile
-	lda	MMTEMPP1	; A = spazio occupato dalla variabile
+	pha
 	jsr	FINDFREESPOT
+	pla
 	bcc	@setvar
 
 	;; Se non è stato trovato alcuno spazio, deframmenta la memoria quanto basta per avere A bytes di spazio
-	ldx	MMTEMPP1	; A = spazio occupato dalla variabile
+	pha
+
+	tax
 	ldy	#0
 	jsr	DEFRAG
+	pla
 @setvar:
 	;; A questo punto abbiamo i seguenti valori in memoria:
 	;;  CURRVAR = Indirizzo di memoria libero trovato
 	;;  MMTEMPP2 = Indirizzo della variabile precedente
 	;;  MMTEMPP1 = Indirizzo della variabile successiva
 
+	; Per prima cosa aggiorniamo lo spazio disponibile
+	ldx	MMFREE
+	sta	MMFREE
+	txa
+	sec
+	sbc	MMFREE
+	sta	MMFREE
+	bcs	@link
+
+	dec	MMFREE+1
+@link:
 	;; Dobbiamo linkare la nostra variabile
 
 	;; Aggiunta del link alla variabile precedente solo se non diventa la prima

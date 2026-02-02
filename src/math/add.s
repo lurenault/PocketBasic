@@ -38,10 +38,10 @@ ISUB:
 	.ifndef	MODE16
 
 	lda	DAC+4
-	sec	DBR+4
+	sbc	DBR+4
 	sta	DAC+4
 	lda	DAC+3
-	sec	DBR+3
+	sbc	DBR+3
 	sta	DAC+3
 
 	.endif

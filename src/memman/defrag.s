@@ -65,13 +65,13 @@ DEFRAG:
 
 	;; Se X,Y == Puntatore locazione successiva, la zona di memoria non è frammentata 
 	cpx	MMTEMPP1
-	beq	@nextcheckptr
-@nextloc:
-	jmp	@next
-@nextcheckptr:
+	bne	@fragm
+
 	cpy	MMTEMPP1+1
-	beq	@nextloc
-	
+	bne	@fragm
+
+	jmp	@next
+@fragm:
 	;; LOCAZIONE FRAMMENTATA
 	;; Verifichiamo se ha una grandezza sufficiente
 	;; X,Y = Grandezza spazio = (MMTEMPP1)-(XY)
@@ -132,13 +132,16 @@ DEFRAG:
 
 	jsr	SIZEOF
 	tay
-	sta	MMTEMPP1
 	pla
+	sta	MMTEMPP1+1
+	pla
+	sty	MMTEMPP1
 	sec
 	sbc	MMTEMPP1
 	sta	MMTEMPP1
-	pla
-	sbc	#0
+
+	lda	MMTEMPP1+1
+	sbc #0
 	sta	MMTEMPP1+1
 
 	;; Situazione corrente:

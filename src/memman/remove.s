@@ -20,6 +20,14 @@ REMOVEVAR:
 	ora	CURRVAR+1
 	beq	@exit
 
+	; Aggiorna la memoria disponibile
+	jsr SIZEOF
+	clc
+	adc	MMFREE
+	sta MMFREE
+	bcc @unlink
+	inc MMFREE
+@unlink:
 	ldy	#0		; Salva il puntatore alla variabile successiva in MMTEMPP1
 	lda	(CURRVAR),y
 	sta	MMTEMPP1

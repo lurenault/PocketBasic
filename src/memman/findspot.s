@@ -103,6 +103,7 @@ FINDFREESPOT:
 
 	.endif
 @notlast:
+	dey
 	lda	(MMTEMPP2),y	; La memoria tra gli spazi è uguale a INDIRIZZO INIZIO VARIABILE SUCCESSIVA -
 	sec			; - INDIRIZZO FINE VARIABILE CORRENTE+1
 	sbc	CURRVAR

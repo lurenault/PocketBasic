@@ -21,7 +21,7 @@
 	;; - chiamare MEMINIT
 	
 	.ifndef	MEMMANZP_H
-	.error	"Must include memman_zp.s in zeropage section!"
+	.fatal	"Must include memman_zp.s in zeropage section!"
 	.else
 
 	.out	"Memory Manager v0.1 by lurenault"
@@ -49,15 +49,11 @@ MEMINIT:
 	
 	.else
 	
-	pha
-	
 	lda 	#$00
 	sta 	FIRSTENTRY
 	sta 	FIRSTENTRY+1
 	sta	CURRVAR
 	sta	CURRVAR+1
-
-	pla
 	
 	.endif
 	;; Imposta l'inizio della memoria
@@ -65,6 +61,17 @@ MEMINIT:
 	stx	MEMBOTTOM
 	sty	MEMBOTTOM+1
 
+	; Ora calcoliamo la memoria disponibile
+	lda	MEMTOP
+	sec
+	sbc MEMBOTTOM
+	sta	MMFREE
+
+	lda	MEMTOP+1
+	sbc	MEMBOTTOM+1
+	sta	MMFREE+1
+
+	; Se il carry è settato, MEMTOP < MEMBOTTOM!
 	rts
 
 MOVEBOTTOM:

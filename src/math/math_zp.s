@@ -1,5 +1,9 @@
 	;; math.s zeropage variables
 
+.ifndef MATHZP_H
+MATHZP_H	:=1
+.endif
+
 	.ifdef	MODE16
 DACSIZE:=2
 	.else

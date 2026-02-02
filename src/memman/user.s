@@ -72,6 +72,8 @@ FINDVAR:
 	cmp	(MMNAMEPTR),y
 	bne	@nextvar	;Se anche un singolo carattere non coincide, i nomi non coincidono
 
+	inc MMTEMPP2
+	inc MMTEMPP2+1
 	dex
 	bne	@nameloop
 

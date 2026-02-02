@@ -69,7 +69,7 @@ DACTOHEXSTR:
 	lda	MOR+1
 	cmp	MOR
 	pla
-	bcc	@dontshow
+	bcc	@loop
 
 	;; Dobbiamo visualizzare uno zero
 
@@ -88,7 +88,7 @@ DACTOHEXSTR:
 	sta	(MATHPTR),y
 
 	iny
-	rts
+	bne	@loop
 	
 
 HEXSTRTODAC:
@@ -179,7 +179,7 @@ HEXSTRTODAC:
 
 	cmp	#'9'+1		; Se è minore o uguale al numero '9' siamo a posto
 	bcc	@convert
-
+@inverr:
 	;; ERRORE: è stato trovato un carattere invalido!
 	sec
 	lda	#1

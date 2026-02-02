@@ -27,5 +27,7 @@ MMBUFFLEN:
 	.res 1			; Lunghezza buffer dei dati della variabile
 MMBUFFPTR:
 	.res 2			; Puntatore al buffer dei dati della variabile
+MMFREE:
+	.res 2	; Memoria disponibile
 
-; TOTALE:    19 byte
+; TOTALE:    21 byte

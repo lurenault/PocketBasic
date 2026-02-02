@@ -1,0 +1,7 @@
+ MEMORY MANAGER KNOWN BUG LIST
+
+
+ID                  Description                                                 Status
+------------------------------------------------------------------------------------------------------
+1                   Sometimes MALLOC gives no space error even though there     FIXED
+                    is available space

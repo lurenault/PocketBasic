@@ -9,7 +9,7 @@
 	;; $05-$06	Esponente della variabile
 
 	.ifndef	MATHZP_H
-	.error	"Must include math_zp.s in zeropage segment!"
+	.fatal	"Must include math_zp.s in zeropage segment!"
 	.endif
 
 	.out	"PocketBasic Mathematical Library by lurenault"
@@ -20,3 +20,6 @@
 
 	.include	"add.s"
 	.include	"display.s"
+
+FIXEXP:
+	rts

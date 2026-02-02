@@ -1,6 +1,6 @@
 	;; Calcolo della memoria libera/usata
 
-MMFREE:
+MMFREEMEM:
 	;; INPUT: -
 	;; OUTPUT: x,y=Memoria libera (low-high order)
 	;; 	   Carry= set se MEMTOP è minore di MEMBOTTOM
@@ -22,7 +22,7 @@ MMFREE:
 	lda	MMTEMPP1
 	pha
 	
-	txa			; X contiene MEMTOP
+	lda	MEMTOP; X contiene MEMTOP
 	;; Il carry è già settato dal confronto tra MEMTOP e MEMBOTTOM
 	sbc	MEMBOTTOM
 	sta	MMTEMPP1
@@ -45,6 +45,7 @@ MMFREE:
 	lda	MMTEMPP1
 	sec			; Sottrae le dimensioni della variabile dalla memoria disponibile
 	sbc	MMTEMPP2
+	sta	MMTEMPP1
 	bcs	@next
 	dec	MMTEMPP1+1
 @next:
